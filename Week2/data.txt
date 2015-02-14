@@ -1,7 +1,0 @@
-af 1
-af 2
-rl
-rf
-af 3
-al 1
-al 2
