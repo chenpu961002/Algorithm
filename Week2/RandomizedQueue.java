@@ -6,7 +6,7 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
     private int N;
     private int tail; // the tail of the data(exclusive)
 
-    private RandomizedQueue() {
+    public RandomizedQueue() {
         a = (Item[]) new Object[2];
     }
 
@@ -29,11 +29,12 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
         }
         a = temp;
         tail = index;
+        assert tail == N;
     }
 
     public void enqueue(Item item) {
         if (null == item) throw new java.lang.NullPointerException();
-        if (tail == a.length) resize(2 * N);
+        if (tail == a.length) resize(N == 0 ? 2 : 2 * N);
         a[tail++] = item;
         N++;
     }
@@ -70,6 +71,7 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
     private class RandomizedQueueIterator implements Iterator<Item> {
         private int[] orders;
         private int index;
+        private int alreadyFound;
         public RandomizedQueueIterator() {
             orders = new int[tail];
             for (int i = 0; i < orders.length; i++) {
@@ -77,17 +79,21 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
             }
             StdRandom.shuffle(orders);
             index = 0;
+            alreadyFound = 0;
         }
 
         public boolean hasNext() {
-            return index < orders.length;
+            return alreadyFound < N;
         }
 
         public Item next() {
             if (!hasNext()) throw new NoSuchElementException();
             while (true) {
                 Item item = a[orders[index++]];
-                if (null != item) return item;
+                if (null != item) {
+                    alreadyFound++;
+                    return item;
+                }
             }
         }
 
@@ -96,8 +102,33 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
         }
     }
 
+    // public String toString() {
+    // StringBuilder sb = new StringBuilder();
+    // sb.append(N + ":");
+    // for (Item item : this) {
+    // sb.append(item + " ");
+    // }
+    // return sb.toString();
+    // }
 
-
-
-
+    // public static void main(String[] args) {
+    // RandomizedQueue<String> r = new RandomizedQueue<String>();
+    // while (!StdIn.isEmpty()) {
+    // String op = StdIn.readString();
+    // if (op.equals("+")) {
+    // String value = StdIn.readString();
+    // System.out.println("enqueue " + value);
+    // r.enqueue(value);
+    // System.out.println(r);
+    // } else if (op.equals("-")) {
+    // r.dequeue();
+    // System.out.println(r);
+    // }
+    // }
+    // System.out.println("test");
+    // System.out.println(r);
+    // System.out.println(r);
+    // System.out.println(r);
+    // System.out.println(r);
+    // }
 }

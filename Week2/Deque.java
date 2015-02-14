@@ -122,13 +122,13 @@ public class Deque<Item> implements Iterable<Item> {
         }
     }
 
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        for (Item item : this) {
-            sb.append(item + " ");
-        }
-        return sb.toString();
-    }
+    // private String toString() {
+    // StringBuilder sb = new StringBuilder();
+    // for (Item item : this) {
+    // sb.append(item + " ");
+    // }
+    // return sb.toString();
+    // }
 
     private boolean check() {
         if (N == 0) {
@@ -145,7 +145,7 @@ public class Deque<Item> implements Iterable<Item> {
 
         int numberOfNodes = 0;
         for (Node x = first; x != null; x = x.pre) {
-            numberOfNodes ++;
+            numberOfNodes++;
         }
 
         if (numberOfNodes != N) return false;
@@ -153,19 +153,19 @@ public class Deque<Item> implements Iterable<Item> {
     }
 
     public static void main(String[] args) {
-        Deque<String> d = new Deque<String>();
-        while (!StdIn.isEmpty()) {
-            String op = StdIn.readString();
-            if (op.equals("af")) {
-                String value = StdIn.readString();
-                d.addFirst(value);
-            } else if (op.equals("al")) {
-                String value = StdIn.readString();
-                d.addLast(value);
-            } else if (op.equals(("rf"))) StdOut.print(d.removeFirst() + " ");
-            else if (op.equals(("rl"))) StdOut.print(d.removeLast() + " ");
-        }
-        StdOut.println("(" + d.size() + " left on stack)");
-        StdOut.println(d);
+        // Deque<String> d = new Deque<String>();
+        // while (!StdIn.isEmpty()) {
+        // String op = StdIn.readString();
+        // if (op.equals("af")) {
+        // String value = StdIn.readString();
+        // d.addFirst(value);
+        // } else if (op.equals("al")) {
+        // String value = StdIn.readString();
+        // d.addLast(value);
+        // } else if (op.equals(("rf"))) StdOut.print(d.removeFirst() + " ");
+        // else if (op.equals(("rl"))) StdOut.print(d.removeLast() + " ");
+        // }
+        // StdOut.println("(" + d.size() + " left on stack)");
+        // StdOut.println(d);
     }
 }
