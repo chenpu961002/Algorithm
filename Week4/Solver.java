@@ -1,101 +1,141 @@
 public class Solver {
     private MinPQ<GameTree> pq;
-    private MinPQ<GameTree> pqSwap;
+    private boolean isSolvable;
     private Stack<Board> solution;
     private int moves;
-    private boolean alreadyCal;
-    private boolean result;
 
     private class GameTree implements Comparable<GameTree> {
         private Board current;
-        private int step;
+        private int move;
         private GameTree parent;
-        public GameTree(Board current, int step, GameTree parent) {
+        public GameTree(Board current, int move, GameTree parent) {
             this.current = current;
-            this.step = step;
+            this.move = move;
             this.parent = parent;
         }
+        private int getPriority() {
+            return this.current.manhattan() + this.move;
+        }
+
         public int compareTo(GameTree that) {
-            int cmp = this.current.manhattan() + this.step
-                      - (that.current.manhattan() + that.step);
+            int cmp = this.getPriority() - that.getPriority();
+            // if (cmp == 0) {
+            // cmp = this.getMove() - that.getMove();
+            // }
             return cmp;
+        }
+
+        public int getMove() {
+            return this.move;
         }
     }
 
     public Solver(Board initial) {
         if (null == initial) throw new java.lang.NullPointerException();
-        int N = initial.dimension();
-        // virtual node, first previous node, set steps a very large value
-        // to ensure the virtualNode deleted first
-        GameTree virtualNode = new GameTree(new Board(new int[N][N]), -10000, null);
-        // first node, initialized by initial
-        GameTree firstNode = new GameTree(initial, 0, virtualNode);
-        GameTree firstNodeSwap = new GameTree(initial.twin(), 0, virtualNode);
-        this.pq = new MinPQ<GameTree>();
-        this.pqSwap = new MinPQ<GameTree>();
-        this.pq.insert(virtualNode);
-        this.pqSwap.insert(virtualNode);
-        this.pq.insert(firstNode);
-        this.pqSwap.insert(firstNodeSwap);
+        this.isSolvable = isSolvable(initial);
         this.solution = null;
         this.moves = -1;
-
-        // cal
-        this.result = isSolvable();
-        this.alreadyCal = true;
-    }
-
-    public boolean isSolvable() {
-        if (this.alreadyCal)
-            return this.result;
-        else
-            this.alreadyCal = true;
-
-        try {
-            this.result = isSolvable(false);
-            return this.result;
-        } catch (java.lang.OutOfMemoryError e1) {
-            try {
-                while (!this.pq.isEmpty())
-                    this.pq.delMin();
-                this.pq = null;
-                isSolvable(true);
-            } catch (java.lang.OutOfMemoryError e2) {
-                e2.printStackTrace();
-            }
-            this.result = false;
-            return this.result;
+        // virtual node, first previous node, set steps a very large value
+        // to ensure the virtualNode deleted first
+        // first node, initialized by initial
+        if (this.isSolvable) {
+            int N = initial.dimension();
+            GameTree virtualNode = new GameTree(new Board(new int[N][N]), -10000, null);
+            GameTree firstNode = new GameTree(initial, 0, virtualNode);
+            this.pq = new MinPQ<GameTree>();
+            // this.pq.insert(virtualNode);
+            this.pq.insert(firstNode);
+            toSolve();
         }
     }
 
-    private boolean isSolvable(boolean isSwap) {
-        int step = 1;
-        MinPQ<GameTree> realPQ = null;
-        if (isSwap)
-            realPQ = this.pqSwap;
-        else
-            realPQ = this.pq;
+    private int[] parseString(String board) {
+        String[] s = board.split("\\s");
+        Queue<String> q = new Queue<String>();
+        for (String ss : s) {
+            String ssTrim = ss.trim();
+            if (!ssTrim.isEmpty()) {
+                q.enqueue(ssTrim);
+            }
+        }
+        q.dequeue();
 
+        int[] result = new int[q.size()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = Integer.parseInt(q.dequeue());
+        }
+        return result;
+    }
+
+    private void exch(int[]board, int idx1, int idx2) {
+        int tmp = board[idx1];
+        board[idx1] = board[idx2];
+        board[idx2] = tmp;
+    }
+
+    private boolean isSolvable(Board initial) {
+        // cal the sign of the problem
+        // look for the position (p,q) of 0
+        // sign = (N-1 - p ) + (N-1 -q)
+        int sign = -1;
+        int[] board = parseString(initial.toString());
+
+        int N = (int) Math.sqrt(board.length);
+        for (int i = 0; i < board.length; i++) {
+            if (board[i] == 0) {
+                int row = i / N;
+                int col = i % N;
+                sign = ((N - 1 - row) + (N - 1 - col)) % 2;
+            }
+        }
+
+        // cal real sign
+        int signReal = 0;
+        for (int i = 0; i < board.length; i++) {
+            // wrong position
+            if (board[i] != i + 1) {
+                // find the position of i+1 behind
+                for (int j = i + 1; j < board.length; j++) {
+                    if (board[j] == i + 1) {
+                        exch(board, i, j);
+                        signReal = 1 - signReal;
+                        break;
+                    }
+                }
+            }
+        }
+        return sign == signReal;
+    }
+
+    private void toSolve() {
         // pop the virtural first
-        GameTree previous = realPQ.delMin();
+        // GameTree previous = this.pq.delMin();
+        // System.out.println(previous.getPriority());
         while (true) {
-            GameTree currentNode = realPQ.delMin();
+            // for (GameTree t : this.pq) {
+            // System.out.println(t.current.toString());
+            // }
+            GameTree currentNode = this.pq.delMin();
+            // System.out.println("!" + currentNode.getMove() + ":"
+            // + currentNode.current.manhattan() + ":"
+            // + currentNode.getPriority());
+
             if (currentNode.current.isGoal()) {
                 this.solution = new Stack<Board>();
+                this.moves = currentNode.move;
                 while (null != currentNode.parent) {
                     this.solution.push(currentNode.current);
-                    this.moves++;
                     currentNode = currentNode.parent;
                 }
-                return true;
+                break;
             }
             for (Board neighbor : currentNode.current.neighbors()) {
-                if (neighbor.equals(previous.current))
+                if (neighbor.equals(currentNode.parent.current))
                     continue;
-                GameTree newNode = new GameTree(neighbor, step, currentNode);
-                realPQ.insert(newNode);
+                int currentStep = currentNode.move;
+                GameTree newNode = new GameTree(neighbor, currentStep + 1, currentNode);
+                this.pq.insert(newNode);
             }
-            step++;
         }
     }
 
@@ -103,8 +143,12 @@ public class Solver {
         return this.moves;
     }
 
+    public boolean isSolvable() {
+        return this.isSolvable;
+    }
+
     public Iterable<Board> solution() {
-        return solution;
+        return this.solution;
     }
 
     public static void main(String[] args) {

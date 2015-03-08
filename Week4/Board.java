@@ -1,17 +1,29 @@
 public class Board {
-    private int[][] board;
+    private char[] board;
     private int N;
     private int hammingValue;
     private int manhattanValue;
+
+    private Board(char[] blocks) {
+        if (null == blocks) throw new java.lang.NullPointerException();
+        this.N = (int) Math.sqrt(blocks.length);
+        this.hammingValue = -1;
+        this.manhattanValue = -1;
+        this.board = new char[this.N * this.N];
+        for (int i = 0; i < this.N * this.N; i++) {
+            board[i] = blocks[i];
+        }
+    }
+
     public Board(int[][] blocks) {
         if (null == blocks) throw new java.lang.NullPointerException();
         this.N = blocks.length;
         this.hammingValue = -1;
         this.manhattanValue = -1;
-        board = new int[N][N];
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                board[i][j] = blocks[i][j];
+        this.board = new char[this.N * this.N];
+        for (int i = 0; i < this.N; i++) {
+            for (int j = 0; j < this.N; j++) {
+                this.board[i * this.N + j] = convertToChar(blocks[i][j]);
             }
         }
     }
@@ -23,14 +35,13 @@ public class Board {
     public int hamming() {
         if (-1 != hammingValue)
             return hammingValue;
+
         hammingValue = 0;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if (N - 1 == i && N - 1 == j)
-                    continue;
-                if (N * i + j + 1 != board[i][j])
-                    hammingValue++;
-            }
+        for (int i = 0; i < this.board.length; i++) {
+            if (i == this.board.length - 1)
+                continue;
+            if (this.board[i] != convertToChar(i + 1))
+                hammingValue++;
         }
         return hammingValue;
     }
@@ -38,17 +49,17 @@ public class Board {
     public int manhattan() {
         if (-1 != manhattanValue)
             return manhattanValue;
+
         manhattanValue = 0;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                int ele = board[i][j];
-                if (0 == ele)
-                    continue;
-                int row = (ele - 1) / N;
-                int col = (ele - 1) % N;
-                // System.out.println(ele + " " + i + " " + j + " " + row + " " + col);
-                manhattanValue += Math.abs(row - i) + Math.abs(col - j);
-            }
+        for (int i = 0; i < this.board.length; i++) {
+            int ele = convertToInt(this.board[i]);
+            if (ele == 0)
+                continue;
+            int iRow = i / N;
+            int iCol = i % N;
+            int row = (ele - 1) / N;
+            int col = (ele - 1) % N;
+            manhattanValue += Math.abs(iRow - row) + Math.abs(iCol - col);
         }
         return manhattanValue;
     }
@@ -58,22 +69,15 @@ public class Board {
     }
 
     public Board twin() {
-        int row1 = -1, col1 = -1;
-        int row2 = -1, col2 = -1;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N - 1; j++) {
-                if (board[i][j] != 0 && board[i][j + 1] != 0) {
-                    row1 = i;
-                    col1 = j;
-                    row2 = i;
-                    col2 = j + 1;
-                }
+        for (int i = 0; i < this.N * this.N; i += this.N) {
+            if (this.board[i] != convertToChar(0) && this.board[i + 1] != convertToChar(0)) {
+                exch(i, i + 1);
+                Board t = new Board(this.board);
+                exch(i, i + 1);
+                return t;
             }
         }
-        exch(row1, col1, row2, col2);
-        Board t = new Board(board);
-        exch(row1, col1, row2, col2);
-        return t;
+        return null;
     }
 
     public boolean equals(Object y) {
@@ -84,10 +88,9 @@ public class Board {
         Board that = (Board) y;
         if (that.dimension() != N)
             return false;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if (this.board[i][j] != that.board[i][j])
-                    return false;
+        for (int i = 0; i < this.board.length; i++) {
+            if (this.board[i] != that.board[i]) {
+                return false;
             }
         }
         return true;
@@ -95,48 +98,44 @@ public class Board {
 
     public Iterable<Board> neighbors() {
         Queue<Board> boards = new Queue<Board>();
-        int originRow = -1;
-        int originCol = -1;
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                if (0 == board[i][j]) {
-                    originRow = i;
-                    originCol = j;
-                    break;
-                }
+        int originIdx = -1;
+        for (int i = 0; i < this.board.length; i++) {
+            if (board[i] == convertToChar(0)) {
+                originIdx = i;
+                break;
             }
         }
 
         // up
-        if (originRow > 0) {
-            exch(originRow, originCol, originRow - 1, originCol);
-            Board tmp = new Board(board);
+        if (originIdx - this.N >= 0) {
+            exch(originIdx, originIdx - this.N);
+            Board tmp = new Board(this.board);
             boards.enqueue(tmp);
-            exch(originRow, originCol, originRow - 1, originCol);
+            exch(originIdx, originIdx - this.N);
         }
 
         //down
-        if (originRow < N - 1) {
-            exch(originRow, originCol, originRow + 1, originCol);
-            Board tmp = new Board(board);
+        if (originIdx + this.N < this.board.length) {
+            exch(originIdx, originIdx + this.N);
+            Board tmp = new Board(this.board);
             boards.enqueue(tmp);
-            exch(originRow, originCol, originRow + 1, originCol);
+            exch(originIdx, originIdx + this.N);
         }
 
         //left
-        if (originCol > 0) {
-            exch(originRow, originCol, originRow, originCol - 1);
+        if (originIdx % this.N > 0) {
+            exch(originIdx, originIdx - 1);
             Board tmp = new Board(board);
             boards.enqueue(tmp);
-            exch(originRow, originCol, originRow, originCol - 1);
+            exch(originIdx, originIdx - 1);
         }
 
         //right
-        if (originCol < N - 1) {
-            exch(originRow, originCol, originRow, originCol + 1);
+        if (originIdx % this.N < this.N - 1) {
+            exch(originIdx, originIdx + 1);
             Board tmp = new Board(board);
             boards.enqueue(tmp);
-            exch(originRow, originCol, originRow, originCol + 1);
+            exch(originIdx, originIdx + 1);
         }
         return boards;
     }
@@ -144,19 +143,26 @@ public class Board {
     public String toString() {
         StringBuilder s = new StringBuilder();
         s.append(N + "\n");
-        for (int i = 0; i < N; i++) {
-            for (int j = 0; j < N; j++) {
-                s.append(String.format("%2d ", board[i][j]));
-            }
-            s.append("\n");
+        for (int i = 0; i < this.board.length; i++) {
+            s.append(String.format("%2d ", convertToInt(board[i])));
+            if (i % this.N == this.N - 1)
+                s.append("\n");
         }
         return s.toString();
     }
 
-    private void exch(int row1, int col1, int row2, int col2) {
-        int tmp = board[row1][col1];
-        board[row1][col1] = board[row2][col2];
-        board[row2][col2] = tmp;
+    private void exch(int idx1, int idx2) {
+        char tmp = board[idx1];
+        board[idx1] = board[idx2];
+        board[idx2] = tmp;
+    }
+
+    private char convertToChar(int origin) {
+        return (char) origin;
+    }
+
+    private int convertToInt(char orign) {
+        return (int) orign;
     }
 
     public static void main(String[] args) {

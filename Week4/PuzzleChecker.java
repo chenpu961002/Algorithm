@@ -43,6 +43,7 @@ public class PuzzleChecker {
             }
 
             // solve the slider puzzle
+            // System.out.println("processing " + filename);
             Board initial = new Board(tiles);
             Solver solver = new Solver(initial);
             System.out.println(filename + ": " + solver.moves());
